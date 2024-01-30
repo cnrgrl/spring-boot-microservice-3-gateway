@@ -1,41 +1,44 @@
-package com.sha.springbootmicroservice3gateway.security;
+package com.sha.springbootmicroservice3gateway.controller;
 
-public class JwtAuthorizationFilter package com.sha.springbootmicroservice3gateway.security;
-
-        import com.sha.springbootmicroservice3gateway.security.jwt.IJwtProvider;
-        import org.springframework.beans.factory.annotation.Autowired;
-        import org.springframework.security.core.Authentication;
-        import org.springframework.security.core.context.SecurityContextHolder;
-        import org.springframework.web.filter.OncePerRequestFilter;
-
-        import javax.servlet.FilterChain;
-        import javax.servlet.ServletException;
-        import javax.servlet.http.HttpServletRequest;
-        import javax.servlet.http.HttpServletResponse;
-        import java.io.IOException;
+import com.sha.springbootmicroservice3gateway.model.User;
+import com.sha.springbootmicroservice3gateway.service.IAuthenticationService;
+import com.sha.springbootmicroservice3gateway.service.IUserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @author sa
  * @date 18.04.2021
- * @time 13:13
+ * @time 13:28
  */
-public class JwtAuthorizationFilter extends OncePerRequestFilter
+@RestController
+@RequestMapping("api/authentication")//pre-path
+public class AuthenticationController
 {
     @Autowired
-    private IJwtProvider jwtProvider;
+    private IAuthenticationService authenticationService;
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException
+    @Autowired
+    private IUserService userService;
+
+    @PostMapping("sign-up") //api/authentication/sign-up
+    public ResponseEntity<?> signUp(@RequestBody User user)
     {
-        Authentication authentication = jwtProvider.getAuthentication(request);
-
-        if (authentication != null && jwtProvider.isTokenValid(request))
+        if (userService.findBUsername(user.getUsername()).isPresent())
         {
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
-
-        filterChain.doFilter(request, response);
+        return new ResponseEntity<>(userService.saveUser(user), HttpStatus.CREATED);
     }
-}{
+
+    @PostMapping("sign-in")//api/authentication/sign-in
+    public ResponseEntity<?> signIn(@RequestBody User user)
+    {
+        return new ResponseEntity<>(authenticationService.signInAndReturnJWT(user), HttpStatus.OK);
+    }
 }
